@@ -1,47 +1,73 @@
-resource "aws_vpc" "example" {
+resource "aws_vpc" "Terraform" {
   cidr_block = "10.0.0.0/16"
   tags = {
-    Name = "main"
+    Name = "Terraform"
   }
 }
 
-# Creating Public Subnet
+# Create Public Subnet
 resource "aws_subnet" "public_subnet" {
-  vpc_id     = aws_vpc.example.id
+  vpc_id     = aws_vpc.Terraform.id
   cidr_block = "10.0.1.0/24"
+
   tags = {
-    Name = "Public Subnet"
+    Name = "Ter-Pub-Sub"
   }
 }
 
-# Creating Subnet
-resource "aws_subnet" "private_ubnet" {
-  vpc_id     = aws_vpc.example.id
+# Create Private Subnet
+resource "aws_subnet" "private_subnet" {
+  vpc_id     = aws_vpc.Terraform.id
   cidr_block = "10.0.2.0/24"
+
   tags = {
-    Name = "Private Subnet"
+    Name = "Ter-Pri-Sub"
   }
 }
 
-# Creating internet gateway
-resource "aws_internet_gateway" "lab_gw" {
-  vpc_id = aws_vpc.example.id
+#Internet Gateway
+resource "aws_internet_gateway" "gw" {
+  vpc_id = aws_vpc.Terraform.id
 
   tags = {
-    Name = "labmain"
+    Name = "Terraform-GW"
   }
 }
 
-# Creating Route Table
-resource "aws_route_table" "public_rt" {
-  vpc_id = aws_vpc.example.id
+# Public route table
+resource "aws_route_table" "Pub-RT" {
+  vpc_id = aws_vpc.Terraform.id
 
   route {
     cidr_block = "0.0.0.0/0"
-    gateway_id = "igw-009aba44e7219e77c"
+    gateway_id = aws_internet_gateway.gw.id
   }
 
   tags = {
-    Name = "Public RT"
+    Name = "Terraform-Pub-RT"
   }
+}
+
+# Add tag to the Main Route Table
+resource "aws_default_route_table" "Private-RT" {
+  default_route_table_id = "${aws_vpc.Terraform.default_route_table_id}"
+
+  tags = {
+    Name = "Terraform-Pri-RT"
+  }
+}
+
+# Route Table Assoiciation with Public
+resource "aws_route_table_association" "Asso" {
+  subnet_id      = aws_subnet.public_subnet.id
+  route_table_id = aws_route_table.Pub-RT.id
+}
+
+# Route Table Assoiciation with Private
+resource "aws_route_table_association" "Assoi" {
+#  subnet_id      = "${aws_subnet.private_subnet.id}"
+#  route_table_id = "${aws_route_table.private-RT.id}"
+
+  subnet_id      = aws_subnet.private_subnet.id 
+  route_table_id = aws_default_route_table.Private-RT.id
 }
