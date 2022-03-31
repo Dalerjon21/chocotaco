@@ -1,5 +1,5 @@
 resource "aws_vpc" "Terraform" {
-  cidr_block = "10.0.0.0/16"
+  cidr_block = var.vpc_cidr
   tags = {
     Name = "Terraform"
   }
@@ -8,7 +8,8 @@ resource "aws_vpc" "Terraform" {
 # Create Public Subnet
 resource "aws_subnet" "public_subnet" {
   vpc_id     = aws_vpc.Terraform.id
-  cidr_block = "10.0.1.0/24"
+  cidr_block = var.pub_sub_cidr
+  availability_zone = var.av_zones.0
 
   tags = {
     Name = "Ter-Pub-Sub"
@@ -18,7 +19,8 @@ resource "aws_subnet" "public_subnet" {
 # Create Private Subnet
 resource "aws_subnet" "private_subnet" {
   vpc_id     = aws_vpc.Terraform.id
-  cidr_block = "10.0.2.0/24"
+  cidr_block = var.pri_sub_cidr
+  availability_zone = var.av_zones.2
 
   tags = {
     Name = "Ter-Pri-Sub"
@@ -71,3 +73,4 @@ resource "aws_route_table_association" "Assoi" {
   subnet_id      = aws_subnet.private_subnet.id 
   route_table_id = aws_default_route_table.Private-RT.id
 }
+
