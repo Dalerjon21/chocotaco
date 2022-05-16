@@ -1,77 +1,92 @@
-# Create VPC 
-resource "aws_vpc" "Terraform" {
+# Create VPC
+resource "aws_vpc" "main" {
   cidr_block = var.vpc_cidr
   tags = {
-    Name = "Terraform"
+    Name = "VPC-${var.tag}"
   }
 }
 
 # Create Public Subnet
 resource "aws_subnet" "public_subnet" {
-  vpc_id     = aws_vpc.Terraform.id
-  cidr_block = var.pub_sub_cidr
-  availability_zone = var.av_zones.0
-
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = var.pub_subnet_cidr
+  availability_zone = var.av_zones.1
   tags = {
-    Name = "Ter-Pub-Sub"
+    Name = "Public-${var.tag}"
   }
 }
 
 # Create Private Subnet
 resource "aws_subnet" "private_subnet" {
-  vpc_id     = aws_vpc.Terraform.id
-  cidr_block = var.pri_sub_cidr
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = var.prv_subnet_cidr
   availability_zone = var.av_zones.2
-
   tags = {
-    Name = "Ter-Pri-Sub"
+    Name = "Private-${var.tag}"
   }
 }
 
-#Internet Gateway
-# resource "aws_internet_gateway" "gw" {
-#   vpc_id = aws_vpc.Terraform.id
+# Creating Internet Gateway
+resource "aws_internet_gateway" "internet_gateway" {
+  vpc_id = aws_vpc.main.id
+  tags = {
+    Name = "Internet-${var.tag}"
+  }
+}
 
+
+# # NAT Gateway
+# resource "aws_nat_gateway" "nat_gateway" {
+#   connectivity_type = "private"
+#   subnet_id         = aws_subnet.private_subnet.id
 #   tags = {
-#     Name = "Terraform-GW"
+#     Name = "NAT-${var.tag}"
 #   }
 # }
 
-# # Public route table
-# resource "aws_route_table" "Pub-RT" {
-#   vpc_id = aws_vpc.Terraform.id
 
+# Creating Public Route Table
+resource "aws_route_table" "public_route_table" {
+  vpc_id = aws_vpc.main.id
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.internet_gateway.id
+  }
+  tags = {
+    Name = "Public-${var.tag}-Table"
+  }
+}
+
+# # Creating Private Route Table
+# resource "aws_route_table" "private_route_table" {
+#   vpc_id = aws_vpc.main.id
 #   route {
 #     cidr_block = "0.0.0.0/0"
-#     gateway_id = aws_internet_gateway.gw.id
+#     gateway_id = aws_nat_gateway.nat_gateway.id
 #   }
 
 #   tags = {
-#     Name = "Terraform-Pub-RT"
+#     Name = "Private-${var.tag}-Table"
 #   }
 # }
 
-# # Add tag to the Main Route Table
-# resource "aws_default_route_table" "Private-RT" {
-#   default_route_table_id = "${aws_vpc.Terraform.default_route_table_id}"
 
-#   tags = {
-#     Name = "Terraform-Pri-RT"
-#   }
+# # Main Route Table association
+# resource "aws_main_route_table_association" "c" {
+#   vpc_id         = aws_vpc.main.id
+#   route_table_id = aws_route_table.private_route_table.id
 # }
 
-# # Route Table Assoiciation with Public
-# resource "aws_route_table_association" "Asso" {
-#   subnet_id      = aws_subnet.public_subnet.id
-#   route_table_id = aws_route_table.Pub-RT.id
+
+# Route Table association with Public Subnet
+resource "aws_route_table_association" "a" {
+  subnet_id      = aws_subnet.public_subnet.id
+  route_table_id = aws_route_table.public_route_table.id
+}
+
+
+# # Route Table association with Private Subnet
+# resource "aws_route_table_association" "b" {
+#   subnet_id      = aws_subnet.private_subnet.id
+#   route_table_id = aws_route_table.private_route_table.id
 # }
-
-# # Route Table Assoiciation with Private
-# resource "aws_route_table_association" "Assoi" {
-# #  subnet_id      = "${aws_subnet.private_subnet.id}"
-# #  route_table_id = "${aws_route_table.private-RT.id}"
-
-#   subnet_id      = aws_subnet.private_subnet.id 
-#   route_table_id = aws_default_route_table.Private-RT.id
-# }
-
